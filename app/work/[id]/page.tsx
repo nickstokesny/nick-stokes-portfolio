@@ -1,47 +1,50 @@
-"use client"
-
-import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { Header } from "@/app/components/header"
-import { Footer } from "@/app/components/footer"
-import { getPhotoById, getRelatedPhotos, type Photo } from "@/app/data/photos"
-import { SocialShare } from "@/app/components/social-share"
+import { Footer } from "@/app/components/footer" // Fixed path
+import { notFound } from "next/navigation"
+import { client } from "@/sanity/lib/client"
+import { urlForImage } from "@/lib/sanity-image"
 
-export default function PhotoDetailPage() {
-  const params = useParams()
-  const id = params.id as string
-  const [photo, setPhoto] = useState<Photo | null>(null)
-  const [relatedPhotos, setRelatedPhotos] = useState<Photo[]>([])
-  const [loading, setLoading] = useState(true)
+// Define the Photo type
+interface Photo {
+  _id: string
+  title: string
+  image: any
+  category: string
+  aspectRatio?: number
+  description?: string
+}
 
-  useEffect(() => {
-    // In a real app, you'd fetch from Sanity here
-    // For now, we'll use our local data
-    const fetchedPhoto = getPhotoById(id)
-    if (fetchedPhoto) {
-      setPhoto(fetchedPhoto)
-      setRelatedPhotos(getRelatedPhotos(id))
-    }
-    setLoading(false)
-  }, [id])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
-      </div>
-    )
-  }
+export default async function PhotoDetailPage({ params }: { params: { id: string } }) {
+  // Fetch photo from Sanity instead of local data
+  const photo = await client.fetch<Photo>(
+    `*[_type == "photo" && _id == $id][0] {
+      _id,
+      title,
+      image,
+      "category": category->title,
+      description,
+      "aspectRatio": image.asset->metadata.dimensions.width / image.asset->metadata.dimensions.height
+    }`,
+    { id: params.id }
+  )
 
   if (!photo) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Photo not found</p>
-      </div>
-    )
+    notFound()
   }
+
+  // Find related photos (same category, excluding current)
+  const relatedPhotos = await client.fetch<Photo[]>(
+    `*[_type == "photo" && _id != $id && category->title == $category][0...3] {
+      _id,
+      title,
+      image,
+      "category": category->title,
+      "aspectRatio": image.asset->metadata.dimensions.width / image.asset->metadata.dimensions.height
+    }`,
+    { id: params.id, category: photo.category }
+  )
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -59,10 +62,10 @@ export default function PhotoDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <Image
-              src={photo.imageUrl || "/placeholder.svg"}
+              src={photo.image ? urlForImage(photo.image) : "/placeholder.svg"}
               alt={photo.title}
-              width={photo.width || 1200}
-              height={photo.height || 800}
+              width={1200}
+              height={Math.round(1200 / (photo.aspectRatio || 1))}
               className="w-full h-auto"
               priority
             />
@@ -81,12 +84,6 @@ export default function PhotoDetailPage() {
                 {photo.category}
               </Link>
             </div>
-
-            <SocialShare
-              url={`https://nickstokes.com/work/${photo.id}`}
-              title={`Nick Stokes Photography - ${photo.title}`}
-              description={photo.description || "Photography by Nick Stokes"}
-            />
           </div>
         </div>
 
@@ -94,14 +91,14 @@ export default function PhotoDetailPage() {
           <div className="mt-16">
             <h2 className="text-xl font-bold mb-6">Related Work</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {relatedPhotos.map((relatedPhoto) => (
-                <Link key={relatedPhoto.id} href={`/work/${relatedPhoto.id}`} className="block group">
+              {relatedPhotos.map((relatedPhoto: Photo) => (
+                <Link key={relatedPhoto._id} href={`/work/${relatedPhoto._id}`} className="block group">
                   <div className="relative overflow-hidden">
                     <Image
-                      src={relatedPhoto.imageUrl || "/placeholder.svg"}
+                      src={relatedPhoto.image ? urlForImage(relatedPhoto.image) : "/placeholder.svg"}
                       alt={relatedPhoto.title}
                       width={400}
-                      height={300}
+                      height={Math.round(400 / (relatedPhoto.aspectRatio || 1))}
                       className="w-full h-auto transition-transform duration-700 group-hover:scale-110 object-cover aspect-[4/3]"
                     />
                     <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
