@@ -1,67 +1,70 @@
-"use client"
-
-import { useState } from "react"
-import Link from "next/link"
-import { Instagram } from "lucide-react"
-import { MobileMenu } from "./mobile-menu"
+// app/components/header.tsx
+import Link from "next/link";
 
 interface HeaderProps {
-  activePage?: "work" | "about" | "contact"
+  activePage?: string;
 }
 
-export function Header({ activePage }: HeaderProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
+export function Header({ activePage }: HeaderProps = {}) {
   return (
     <header>
-      <div>
-        <Link href="/" className="logo">
-          NICK STOKES
-        </Link>
-
-        {/* Desktop Navigation */}
-        <nav className="desktop-nav">
-          <Link href="/" className={activePage === "work" ? "active" : ""}>
-            Work
-          </Link>
-          <Link href="/about" className={activePage === "about" ? "active" : ""}>
-            About
-          </Link>
-          <Link href="/contact" className={activePage === "contact" ? "active" : ""}>
-            Contact
-          </Link>
-          <Link
-            href="https://www.instagram.com/nickstokesny/"
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col items-center justify-center min-h-[100px]">
+          <h1 className="text-4xl font-bold mb-8">Nick Stokes Photography</h1>
+          
+          <nav className="flex space-x-6 mb-8">
+            <Link 
+              href="/" 
+              className={`text-lg ${activePage === 'home' ? 'font-bold' : ''}`}
+            >
+              HOME
+            </Link>
+            <Link 
+              href="/about" 
+              className={`text-lg ${activePage === 'about' ? 'font-bold' : ''}`}
+            >
+              ABOUT
+            </Link>
+            <Link 
+              href="/contact" 
+              className={`text-lg ${activePage === 'contact' ? 'font-bold' : ''}`}
+            >
+              CONTACT
+            </Link>
+          </nav>
+          
+          <a
+            href="https://instagram.com/nickstokesny/"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Instagram"
+            className="inline-flex items-center gap-2 text-gray-600"
           >
-            <Instagram className="w-5 h-5" />
-          </Link>
-        </nav>
-
-        {/* Mobile Menu Button */}
-        <button className="mobile-menu-button" onClick={() => setMobileMenuOpen(true)} aria-label="Open menu">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
-        </button>
+            <Instagram size={20} />
+            <span>Follow on Instagram</span>
+          </a>
+        </div>
       </div>
-
-      {/* Mobile Menu */}
-      <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} activePage={activePage} />
     </header>
-  )
+  );
+}
+
+// Instagram icon component
+function Instagram({ size = 24 }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+    </svg>
+  );
 }
